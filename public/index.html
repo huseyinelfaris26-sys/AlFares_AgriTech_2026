@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JaziraAgri-OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">J</div>
+          <div>
+            <p class="eyebrow">OS</p>
+            <h1>JaziraAgri</h1>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a class="nav-item active" href="#">لوحة القيادة</a>
+          <a class="nav-item" href="#">المزارع</a>
+          <a class="nav-item" href="#">التربة</a>
+          <a class="nav-item" href="#">الري</a>
+          <a class="nav-item" href="#">التنبيهات</a>
+          <a class="nav-item" href="#">التوقعات</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">نظام الزراعة الذكية</p>
+            <h2>لوحة المراقبة</h2>
+          </div>
+          <button class="primary-btn">تحديث البيانات</button>
+        </header>
+
+        <section class="stats-grid" id="summary-cards"></section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>التغطية الإقليمية</h3>
+            <span>آخر تحديث: الآن</span>
+          </div>
+          <div id="regions-grid" class="regions-grid"></div>
+        </section>
+
+        <section class="split-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h3>حالة الحقول</h3>
+              <span>12 حقل نشط</span>
+            </div>
+            <div id="fields-table" class="table-wrap"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3>التنبيهات</h3>
+              <span>3 منشورة</span>
+            </div>
+            <div id="alerts-list" class="alerts-list"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>التوقعات الجوية</h3>
+            <span>72 ساعة</span>
+          </div>
+          <div id="forecast-grid" class="forecast-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

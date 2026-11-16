@@ -1,0 +1,23 @@
+{
+  "name": "jazira-agri-os",
+  "version": "1.0.0",
+  "description": "JaziraAgri-OS: smart agricultural monitoring dashboard for Syrian river basin.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "agriculture",
+    "dashboard",
+    "smart-farming",
+    "iot",
+    "soil",
+    "syria"
+  ],
+  "author": "huseyinelfaris26-sys",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
