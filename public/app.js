@@ -1,4 +1,4 @@
-const apiRoutes = {
+const routes = {
   overview: '/api/overview',
   regions: '/api/regions',
   fields: '/api/fields',
@@ -6,112 +6,118 @@ const apiRoutes = {
   forecast: '/api/forecast'
 };
 
-async function loadData() {
-  const [summary, regions, fields, alerts, forecast] = await Promise.all([
-    fetch(apiRoutes.overview).then((res) => res.json()),
-    fetch(apiRoutes.regions).then((res) => res.json()),
-    fetch(apiRoutes.fields).then((res) => res.json()),
-    fetch(apiRoutes.alerts).then((res) => res.json()),
-    fetch(apiRoutes.forecast).then((res) => res.json())
-  ]);
+let fieldData = [];
+const numberFormat = new Intl.NumberFormat('ar');
 
-  renderSummary(summary);
-  renderRegions(regions);
-  renderFields(fields);
-  renderAlerts(alerts);
-  renderForecast(forecast);
+async function getJson(url) {
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`تعذر تحميل البيانات (${response.status})`);
+  return response.json();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+}
+
+function setStatus(message, state = '') {
+  const status = document.getElementById('status-message');
+  status.textContent = message;
+  status.className = `status-message ${state}`.trim();
 }
 
 function renderSummary(summary) {
   const cards = [
-    { label: 'الحالة', value: summary.status, trend: 'مستقر' },
-    { label: 'وقت التشغيل', value: summary.uptime, trend: '++ 1.4%' },
-    { label: 'الحقول النشطة', value: summary.activeFields, trend: '12 مجمعة' },
-    { label: 'كفاءة الري', value: `${summary.irrigationEfficiency}%`, trend: '+8%' },
-    { label: 'مخاطر الملوحة', value: summary.soilSalinityRisk, trend: 'مراقبة' },
-    { label: 'مؤشر الإنتاج', value: `${summary.productivityIndex}%`, trend: '+4%' }
+    ['حالة النظام', summary.status, 'مؤشر تجريبي'],
+    ['وقت التشغيل', summary.uptime, 'بيانات توضيحية'],
+    ['الحقول النشطة', numberFormat.format(summary.activeFields), 'ضمن العينة'],
+    ['كفاءة الري', `${numberFormat.format(summary.irrigationEfficiency)}٪`, 'مؤشر توضيحي'],
+    ['مخاطر الملوحة', summary.soilSalinityRisk, 'تتطلب قياسًا ميدانيًا'],
+    ['مؤشر الإنتاج', `${numberFormat.format(summary.productivityIndex)}٪`, 'مؤشر توضيحي']
   ];
-
-  const container = document.getElementById('summary-cards');
-  container.innerHTML = cards.map((card) => `
-    <div class="stat-card">
-      <span class="stat-label">${card.label}</span>
-      <div class="stat-value">${card.value}</div>
-      <span class="stat-trend">${card.trend}</span>
-    </div>
+  document.getElementById('summary-cards').innerHTML = cards.map(([label, value, note]) => `
+    <article class="stat-card"><span class="stat-label">${escapeHtml(label)}</span>
+      <strong class="stat-value">${escapeHtml(value)}</strong><span class="stat-trend">${escapeHtml(note)}</span></article>
   `).join('');
 }
 
 function renderRegions(regions) {
-  const container = document.getElementById('regions-grid');
-  container.innerHTML = regions.map((region) => `
-    <div class="region-card">
-      <h4>${region.name}</h4>
-      <p>${region.area}</p>
-      <div class="meter"><span style="width:${region.productivity}%"></span></div>
-      <p>إنتاجية: ${region.productivity}%</p>
-      <p>رطوبة: ${region.moisture}%</p>
-    </div>
-  `).join('');
+  document.getElementById('regions-grid').innerHTML = regions.map((region) => {
+    const productivity = Math.max(0, Math.min(100, Number(region.productivity) || 0));
+    return `<article class="region-card"><div class="region-heading"><h3>${escapeHtml(region.name)}</h3><span>${escapeHtml(region.area)}</span></div>
+      <div class="meter" role="progressbar" aria-label="مؤشر الإنتاجية" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${productivity}"><span style="width:${productivity}%"></span></div>
+      <div class="region-metrics"><span>الإنتاجية <b>${numberFormat.format(productivity)}٪</b></span><span>الرطوبة <b>${numberFormat.format(region.moisture)}٪</b></span></div></article>`;
+  }).join('');
 }
 
 function renderFields(fields) {
+  fieldData = Array.isArray(fields) ? fields : [];
+  document.getElementById('field-count').textContent = `${numberFormat.format(fieldData.length)} حقول في العينة`;
+  filterFields();
+}
+
+function filterFields() {
+  const query = document.getElementById('field-search').value.trim().toLocaleLowerCase('ar');
+  const filtered = fieldData.filter((field) => `${field.name} ${field.region} ${field.id}`.toLocaleLowerCase('ar').includes(query));
   const container = document.getElementById('fields-table');
-  container.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>الحقل</th>
-          <th>المنطقة</th>
-          <th>الرطوبة</th>
-          <th>الملوحة</th>
-          <th>الري</th>
-          <th>الكفاءة</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${fields.map((field) => {
-          const badgeClass = field.efficiency >= 85 ? 'good' : field.efficiency >= 75 ? 'warn' : 'alert';
-          return `
-            <tr>
-              <td>${field.name}</td>
-              <td>${field.region}</td>
-              <td>${field.soilMoisture}%</td>
-              <td>${field.salinity} ds/m</td>
-              <td>${field.irrigation}</td>
-              <td><span class="badge ${badgeClass}">${field.efficiency}%</span></td>
-            </tr>
-          `;
-        }).join('')}
-      </tbody>
-    </table>
-  `;
+  if (!filtered.length) {
+    container.innerHTML = '<p class="empty-state">لا توجد حقول تطابق البحث.</p>';
+    return;
+  }
+  container.innerHTML = `<table><thead><tr><th>الحقل</th><th>المنطقة</th><th>الرطوبة</th><th>الملوحة</th><th>الري</th><th>الكفاءة</th></tr></thead><tbody>${filtered.map((field) => {
+    const efficiency = Number(field.efficiency) || 0;
+    const badge = efficiency >= 85 ? 'good' : efficiency >= 75 ? 'warn' : 'alert';
+    return `<tr><td><strong>${escapeHtml(field.name)}</strong><small>${escapeHtml(field.id)} · ${escapeHtml(field.area)}</small></td><td>${escapeHtml(field.region)}</td><td>${numberFormat.format(field.soilMoisture)}٪</td><td>${escapeHtml(field.salinity)} dS/m</td><td>${escapeHtml(field.irrigation)}</td><td><span class="badge ${badge}">${numberFormat.format(efficiency)}٪</span></td></tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function renderAlerts(alerts) {
-  const container = document.getElementById('alerts-list');
-  container.innerHTML = alerts.map((alert) => `
-    <div class="alert-item ${alert.type === 'critical' ? 'critical' : alert.type === 'warning' ? 'warning' : 'info'}">
-      <h4>${alert.title}</h4>
-      <p>${alert.location} • ${alert.severity}</p>
-      <small>${alert.detail}</small>
-    </div>
-  `).join('');
+  document.getElementById('alert-count').textContent = `${numberFormat.format(alerts.length)} تنبيهات تجريبية`;
+  document.getElementById('alerts-list').innerHTML = alerts.map((alert) => {
+    const type = ['critical', 'warning', 'info'].includes(alert.type) ? alert.type : 'info';
+    return `<article class="alert-item ${type}"><div class="alert-title"><h3>${escapeHtml(alert.title)}</h3><span class="badge ${type === 'critical' ? 'alert' : type === 'warning' ? 'warn' : 'good'}">${escapeHtml(alert.severity)}</span></div><p>${escapeHtml(alert.location)}</p><small>${escapeHtml(alert.detail)}</small></article>`;
+  }).join('');
 }
 
 function renderForecast(forecast) {
-  const container = document.getElementById('forecast-grid');
-  container.innerHTML = forecast.map((item) => `
-    <div class="forecast-item">
-      <strong>${item.day}</strong>
-      <div>الأمطار: ${item.rainfall} مم</div>
-      <div>الحرارة: ${item.temp}°</div>
-      <div>توصية: ${item.recommendation}</div>
-    </div>
+  document.getElementById('forecast-grid').innerHTML = forecast.map((item) => `
+    <article class="forecast-item"><strong>${escapeHtml(item.day)}</strong><span>🌧 ${numberFormat.format(item.rainfall)} مم</span><span>🌡 ${numberFormat.format(item.temp)}°</span><p>${escapeHtml(item.recommendation)}</p></article>
   `).join('');
 }
 
-loadData().catch((error) => {
-  console.error('Failed to load dashboard data', error);
-  document.getElementById('summary-cards').innerHTML = '<div class="stat-card"><span class="stat-label">خطأ</span><div class="stat-value">تعذر تحميل البيانات</div></div>';
-});
+async function loadData() {
+  const button = document.getElementById('refresh-button');
+  button.disabled = true;
+  button.textContent = 'جارٍ التحديث…';
+  setStatus('جارٍ تحميل بيانات العرض…');
+  try {
+    const [summary, regions, fields, alerts, forecast] = await Promise.all(Object.entries(routes).map(async ([key, url]) => [key, await getJson(url)]));
+    const data = Object.fromEntries([summary, regions, fields, alerts, forecast]);
+    renderSummary(data.overview);
+    renderRegions(data.regions);
+    renderFields(data.fields);
+    renderAlerts(data.alerts);
+    renderForecast(data.forecast);
+    document.getElementById('last-updated').textContent = `آخر تحديث: ${new Intl.DateTimeFormat('ar', { timeStyle: 'short' }).format(new Date())}`;
+    setStatus('تم تحديث بيانات العرض بنجاح.', 'success');
+  } catch (error) {
+    console.error('Dashboard load failed:', error);
+    setStatus(navigator.onLine ? 'تعذر تحميل البيانات. حاول مرة أخرى.' : 'أنت غير متصل. قد تكون البيانات المحفوظة متاحة بعد أول تحميل.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'تحديث البيانات';
+  }
+}
+
+document.getElementById('refresh-button').addEventListener('click', loadData);
+document.getElementById('field-search').addEventListener('input', filterFields);
+window.addEventListener('online', () => { document.getElementById('connection-label').textContent = 'متصل'; });
+window.addEventListener('offline', () => { document.getElementById('connection-label').textContent = 'غير متصل · وضع غير متصل'; });
+document.getElementById('connection-label').textContent = navigator.onLine ? 'متصل' : 'غير متصل · وضع غير متصل';
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch((error) => console.warn('Offline support unavailable:', error)));
+}
+
+loadData();

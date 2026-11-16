@@ -1,0 +1,11 @@
+{
+  "name": "JaziraAgri-OS",
+  "short_name": "JaziraAgri",
+  "description": "لوحة متابعة تجريبية للزراعة الذكية في الجزيرة السورية",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f3",
+  "theme_color": "#123b2b"
+}
