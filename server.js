@@ -27,7 +27,7 @@ const dashboardData = {
     { id: 'F-104', name: 'حقل العدس الغربي', region: 'الرقة', area: '170 هكتار', soilMoisture: 48, salinity: 4.2, irrigation: 'مراقب', efficiency: 74 }
   ],
   alerts: [
-    { id: 1, type: 'warning', title: 'زيادة ملوحة التربة', location: 'حقل العدس الغربي', severity: 'متوسط', detail: 'يج�� تقليل الري خلال الـ 24 ساعة القادمة.' },
+    { id: 1, type: 'warning', title: 'زيادة ملوحة التربة', location: 'حقل العدس الغربي', severity: 'متوسط', detail: 'يجب تقليل الري خلال الـ 24 ساعة القادمة.' },
     { id: 2, type: 'info', title: 'اكتشاف رطوبة مناسبة', location: 'مساحة الخضراوات', severity: 'منخفض', detail: 'المنطقة مناسبة للري المتوازن.' },
     { id: 3, type: 'critical', title: 'انخفاض في تدفق المياه', location: 'مزرعة الذرة الشمالية', severity: 'عالي', detail: 'تم تفعيل تنبيه التوازن المائي.' }
   ],
