@@ -1,0 +1,81 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import io
+import json
+
+from predictor import DiseasePredictor
+
+app = FastAPI(
+    title="AgriAI API",
+    description="كشف أمراض النباتات بالذكاء الاصطناعي",
+    version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# تحميل النموذج عند الإقلاع
+predictor: DiseasePredictor = None
+
+@app.on_event("startup")
+def load_model():
+    global predictor
+    predictor = DiseasePredictor(model_path="models/best_model.pth")
+
+# ─── Endpoints ───────────────────────────────────────────
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "model_loaded": predictor is not None,
+        "device": str(predictor.device) if predictor else "none"
+    }
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    """رفع صورة ورقة نبات → نتيجة التشخيص"""
+    if not file.content_type in ["image/jpeg", "image/png", "image/webp"]:
+        raise HTTPException(400, "الصيغة غير مدعومة. استخدم JPEG/PNG/WebP")
+
+    contents = await file.read()
+    if len(contents) > 8 * 1024 * 1024:
+        raise HTTPException(413, "حجم الصورة يتجاوز 8MB")
+
+    try:
+        result = predictor.predict(contents)
+    except Exception as e:
+        raise HTTPException(500, f"خطأ في المعالجة: {str(e)}")
+
+    # إضافة معلومات العلاج من قاعدة البيانات
+    result["treatment"] = get_treatment(result["class_name"])
+    return result
+
+@app.get("/diseases")
+def list_diseases(crop: str = None):
+    """قائمة الأمراض مع الفلترة حسب المحصول"""
+    with open("disease_info.json") as f:
+        diseases = json.load(f)
+    if crop:
+        diseases = [d for d in diseases if d["crop"].lower() == crop.lower()]
+    return {"count": len(diseases), "diseases": diseases}
+
+@app.get("/classes")
+def list_classes():
+    """كل الفئات التي يفهمها النموذج"""
+    return {"classes": predictor.class_names, "total": len(predictor.class_names)}
+
+# ─── Helpers ─────────────────────────────────────────────
+
+def get_treatment(class_name: str) -> dict:
+    with open("disease_info.json") as f:
+        diseases = json.load(f)
+    for d in diseases:
+        if d["class_name"] == class_name:
+            return d
+    return {"symptoms": "غير معروف", "treatment": "استشر خبيرًا زراعيًا"}
