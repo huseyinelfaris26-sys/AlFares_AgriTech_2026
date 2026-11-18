@@ -1,0 +1,70 @@
+# .github/workflows/deploy.yml
+name: Deploy AgriAI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── 1. Test ──────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements.txt pytest
+      - run: pytest backend/tests/
+
+  # ─── 2. Build & Push Docker ───────────────────────────
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: us-east-1
+      - run: |
+          docker build -t agriai-api ./backend
+          docker tag agriai-api:latest ${{ steps.ecr.outputs.registry }}/agriai-api:latest
+          docker push ${{ steps.ecr.outputs.registry }}/agriai-api:latest
+
+  # ─── 3. Deploy to ECS ─────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: us-east-1
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster agriai-cluster \
+            --service agriai-api \
+            --force-new-deployment
+
+  # ─── 4. Deploy Frontend (Vercel) ──────────────────────
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: --prod
