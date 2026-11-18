@@ -1,0 +1,38 @@
+[
+  {
+    "class_name": "Tomato___Early_blight",
+    "crop": "Tomato",
+    "disease": "Early Blight",
+    "symptoms": "بقع بنية داكنة بحلقات متمركزة على الأوراق السفلية، اصفرار حول البقع",
+    "cause": "فطر Alternaria solani",
+    "treatment": {
+      "organic": "رش محلول حليب (1:9) أسبوعيًا + إزالة الأوراق المصابة",
+      "chemical": "ميتالأكسي + كلوروثالونيل كل 7-10 أيام",
+      "prevention": "تناوب المحاصيل + ري من القاعدة + تهوية جيدة"
+    }
+  },
+  {
+    "class_name": "Tomato___Late_blight",
+    "crop": "Tomato",
+    "disease": "Late Blight",
+    "symptoms": "بقع خضراء داكنة على الأوراق، حلقة بيضاء، تعفن الثمار",
+    "cause": "عفن Phytophthora infestans",
+    "treatment": {
+      "organic": "إزالة الفطر فورًا + رش خليط بوردو 1%",
+      "chemical": "مانكوزيب + كوبر أوكسي كلوريد",
+      "prevention": "تجنب الري العلوي + تحسين التهوية + إزالة بقايا المحصول"
+    }
+  },
+  {
+    "class_name": "Tomato___healthy",
+    "crop": "Tomato",
+    "disease": "Healthy",
+    "symptoms": "لا توجد أعراض مرضية",
+    "cause": null,
+    "treatment": {
+      "organic": "استمر في الرعاية المعتادة",
+      "chemical": null,
+      "prevention": "مراقبة دورية"
+    }
+  }
+]
